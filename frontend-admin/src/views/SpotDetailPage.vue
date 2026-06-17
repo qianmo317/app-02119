@@ -74,6 +74,34 @@
         </ul>
       </BaseCard>
     </div>
+
+    <!-- 相似推荐 -->
+    <div v-if="similarSpots.length > 0" class="similar-section">
+      <h2 class="section-title">✨ 相似推荐</h2>
+      <div class="similar-list">
+        <div
+          v-for="item in similarSpots"
+          :key="item.id"
+          class="similar-item"
+          @click="goToSpot(item.id)"
+        >
+          <div class="similar-image-wrap">
+            <img
+              v-lazy="getImageUrl(item.image)"
+              :alt="item.name"
+              class="similar-image"
+            >
+            <span class="similar-category">{{ item.categoryName }}</span>
+          </div>
+          <div class="similar-info">
+            <h3 class="similar-name">{{ item.name }}</h3>
+            <div class="similar-meta">
+              <span class="similar-views">🔥 {{ formatViews(item.views) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 404状态 -->
@@ -99,8 +127,12 @@ const router = useRouter()
 const spotsStore = useSpotsStore()
 
 const spot = computed(() => spotsStore.getSpotById(route.params.id))
-// 详情页使用原始图片，不传尺寸参数，保持最高清晰度
 const imageUrl = computed(() => spot.value ? getPlaceholderImage(spot.value.image) : '')
+
+const similarSpots = computed(() => {
+  if (!spot.value) return []
+  return spotsStore.getSimilarSpots(spot.value.id, 3)
+})
 
 const imageLoaded = ref(false)
 function onImageLoad() {
@@ -109,6 +141,22 @@ function onImageLoad() {
 
 function goBack() {
   router.push('/spots')
+}
+
+function goToSpot(id) {
+  router.push(`/spot/${id}`)
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function getImageUrl(image) {
+  return getPlaceholderImage(image)
+}
+
+function formatViews(views) {
+  if (views >= 10000) {
+    return (views / 10000).toFixed(1) + '万'
+  }
+  return views.toLocaleString()
 }
 </script>
 
@@ -359,6 +407,101 @@ function goBack() {
   color: var(--text-muted);
 }
 
+/* ========== 相似推荐 ========== */
+.similar-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-xl);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.section-title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.similar-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.similar-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  background: var(--bg-secondary);
+  transition: all 0.3s ease;
+}
+
+.similar-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.similar-image-wrap {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+}
+
+.similar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.similar-item:hover .similar-image {
+  transform: scale(1.05);
+}
+
+.similar-category {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: var(--border-radius-sm);
+}
+
+.similar-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+}
+
+.similar-name {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.similar-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.similar-views {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
 /* ========== 响应式：移动端垂直堆叠 ========== */
 @media (max-width: 768px) {
   .hero-section {
@@ -383,6 +526,19 @@ function goBack() {
 
   .quick-facts {
     padding: var(--spacing-md);
+  }
+
+  .similar-section {
+    padding: var(--spacing-lg);
+  }
+
+  .similar-list {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .similar-image-wrap {
+    aspect-ratio: 16 / 10;
   }
 }
 </style>
