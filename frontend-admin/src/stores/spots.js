@@ -288,6 +288,41 @@ export const useSpotsStore = defineStore('spots', () => {
     return spots.value.find(s => s.id === Number(id))
   }
 
+  // 从地址中提取地区（区/市）
+  function getRegion(address) {
+    const match = address && address.match(/江门市(.+?[市区])/)
+    return match ? match[1] : ''
+  }
+
+  // 相似推荐：优先同分类，其次同地区，不足按浏览量补足，排除当前景点
+  function getSimilarSpots(id, limit = 3) {
+    const current = spots.value.find(s => s.id === Number(id))
+    if (!current) return []
+
+    const currentRegion = getRegion(current.address)
+    const others = spots.value.filter(s => s.id !== current.id)
+    const byViewsDesc = (a, b) => b.views - a.views
+
+    // 优先级1：同分类
+    const sameCategory = others
+      .filter(s => s.category === current.category)
+      .sort(byViewsDesc)
+
+    // 优先级2：同地区（排除已选中的同分类景点）
+    const selectedIds = new Set(sameCategory.map(s => s.id))
+    const sameRegion = others
+      .filter(s => currentRegion && !selectedIds.has(s.id) && getRegion(s.address) === currentRegion)
+      .sort(byViewsDesc)
+
+    // 优先级3：剩余按浏览量补足
+    sameRegion.forEach(s => selectedIds.add(s.id))
+    const remaining = others
+      .filter(s => !selectedIds.has(s.id))
+      .sort(byViewsDesc)
+
+    return [...sameCategory, ...sameRegion, ...remaining].slice(0, limit)
+  }
+
   function setCategory(category) {
     selectedCategory.value = category
   }
@@ -304,6 +339,7 @@ export const useSpotsStore = defineStore('spots', () => {
     filteredSpots,
     hotSpots,
     getSpotById,
+    getSimilarSpots,
     setCategory,
     setSearchKeyword
   }

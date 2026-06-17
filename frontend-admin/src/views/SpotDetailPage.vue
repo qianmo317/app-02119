@@ -74,6 +74,31 @@
         </ul>
       </BaseCard>
     </div>
+
+    <!-- 相似推荐 -->
+    <div v-if="similarSpots.length" class="similar-section">
+      <div class="similar-header">
+        <h2 class="similar-title">🔗 相似推荐</h2>
+        <p class="similar-subtitle">为你精选相似景点，继续探索江门之美</p>
+      </div>
+      <div class="similar-grid">
+        <div
+          v-for="item in similarSpots"
+          :key="item.id"
+          class="similar-card"
+          @click="goToSpot(item.id)"
+        >
+          <div class="similar-image-wrap">
+            <img v-lazy="getPlaceholderImage(item.image)" :alt="item.name" class="similar-image">
+            <span class="similar-category">{{ item.categoryName }}</span>
+          </div>
+          <div class="similar-info">
+            <h3 class="similar-name">{{ item.name }}</h3>
+            <span class="similar-hot">🔥 热度 {{ formatViews(item.views) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 404状态 -->
@@ -89,7 +114,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSpotsStore } from '@/stores/spots'
-import { getPlaceholderImage } from '@/utils/helpers'
+import { getPlaceholderImage, formatViews } from '@/utils/helpers'
 import BaseCard from '@/components/common/BaseCard.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 import RatingStars from '@/components/common/RatingStars.vue'
@@ -102,6 +127,9 @@ const spot = computed(() => spotsStore.getSpotById(route.params.id))
 // 详情页使用原始图片，不传尺寸参数，保持最高清晰度
 const imageUrl = computed(() => spot.value ? getPlaceholderImage(spot.value.image) : '')
 
+// 相似推荐：优先同分类，其次同地区，不足按浏览量补足
+const similarSpots = computed(() => spotsStore.getSimilarSpots(route.params.id))
+
 const imageLoaded = ref(false)
 function onImageLoad() {
   imageLoaded.value = true
@@ -109,6 +137,10 @@ function onImageLoad() {
 
 function goBack() {
   router.push('/spots')
+}
+
+function goToSpot(id) {
+  router.push(`/spot/${id}`)
 }
 </script>
 
@@ -334,6 +366,108 @@ function goBack() {
   flex-shrink: 0;
 }
 
+/* ========== 相似推荐 ========== */
+.similar-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.similar-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.similar-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.similar-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.similar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.similar-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color-light);
+  cursor: pointer;
+  transition: all var(--transition-slow);
+}
+
+.similar-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-color);
+}
+
+.similar-image-wrap {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.similar-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.similar-card:hover .similar-image {
+  transform: scale(1.05);
+}
+
+.similar-category {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: var(--border-radius-sm);
+}
+
+.similar-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.similar-name {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.similar-hot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--warning);
+  font-weight: 500;
+}
+
 /* ========== 404 状态 ========== */
 .not-found {
   display: flex;
@@ -383,6 +517,10 @@ function goBack() {
 
   .quick-facts {
     padding: var(--spacing-md);
+  }
+
+  .similar-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
