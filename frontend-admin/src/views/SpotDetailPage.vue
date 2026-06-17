@@ -74,6 +74,31 @@
         </ul>
       </BaseCard>
     </div>
+
+    <!-- 相似推荐 -->
+    <div class="similar-section">
+      <h2 class="section-title">✨ 相似推荐</h2>
+      <div class="similar-list">
+        <div
+          v-for="item in similarSpots"
+          :key="item.id"
+          class="similar-item"
+          @click="goToSpot(item.id)"
+        >
+          <div class="similar-image-wrap">
+            <img :src="getImageUrl(item.image)" :alt="item.name" class="similar-image">
+            <span class="hot-badge" v-if="item.hot">🔥 热门</span>
+          </div>
+          <div class="similar-info">
+            <h3 class="similar-name">{{ item.name }}</h3>
+            <div class="similar-meta">
+              <span class="views-count">👁 {{ formatViews(item.views) }}</span>
+              <span class="category-tag">{{ item.categoryName }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 404状态 -->
@@ -99,8 +124,12 @@ const router = useRouter()
 const spotsStore = useSpotsStore()
 
 const spot = computed(() => spotsStore.getSpotById(route.params.id))
-// 详情页使用原始图片，不传尺寸参数，保持最高清晰度
 const imageUrl = computed(() => spot.value ? getPlaceholderImage(spot.value.image) : '')
+
+const similarSpots = computed(() => {
+  if (!spot.value) return []
+  return spotsStore.getSimilarSpots(spot.value.id, 3)
+})
 
 const imageLoaded = ref(false)
 function onImageLoad() {
@@ -109,6 +138,21 @@ function onImageLoad() {
 
 function goBack() {
   router.push('/spots')
+}
+
+function goToSpot(id) {
+  router.push(`/spot/${id}`)
+}
+
+function getImageUrl(image) {
+  return getPlaceholderImage(image)
+}
+
+function formatViews(views) {
+  if (views >= 10000) {
+    return (views / 10000).toFixed(1) + '万'
+  }
+  return views.toLocaleString()
 }
 </script>
 
@@ -359,6 +403,109 @@ function goBack() {
   color: var(--text-muted);
 }
 
+/* ========== 相似推荐模块 ========== */
+.similar-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.similar-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.similar-item {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.similar-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.similar-image-wrap {
+  position: relative;
+  width: 100%;
+  padding-top: 66.67%;
+  overflow: hidden;
+}
+
+.similar-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.similar-item:hover .similar-image {
+  transform: scale(1.05);
+}
+
+.hot-badge {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+.similar-info {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.similar-name {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.similar-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+}
+
+.views-count {
+  color: var(--text-secondary);
+}
+
+.category-tag {
+  padding: 2px 8px;
+  font-size: var(--font-size-xs);
+  color: var(--primary);
+  background: rgba(13, 148, 136, 0.1);
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+}
+
 /* ========== 响应式：移动端垂直堆叠 ========== */
 @media (max-width: 768px) {
   .hero-section {
@@ -383,6 +530,15 @@ function goBack() {
 
   .quick-facts {
     padding: var(--spacing-md);
+  }
+
+  .similar-list {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .section-title {
+    font-size: 1.25rem;
   }
 }
 </style>
