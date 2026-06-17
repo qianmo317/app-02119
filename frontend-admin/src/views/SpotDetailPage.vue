@@ -74,6 +74,34 @@
         </ul>
       </BaseCard>
     </div>
+
+    <!-- 相似推荐 -->
+    <div v-if="similarSpots.length > 0" class="similar-section">
+      <h2 class="section-title">✨ 相似推荐</h2>
+      <div class="similar-grid">
+        <div
+          v-for="item in similarSpots"
+          :key="item.id"
+          class="similar-card"
+          @click="goToSpotDetail(item.id)"
+        >
+          <div class="similar-image-wrapper">
+            <img
+              v-lazy="getPlaceholderImage(item.image)"
+              :alt="item.name"
+              class="similar-image"
+            >
+            <span class="similar-category">{{ item.categoryName }}</span>
+          </div>
+          <div class="similar-info">
+            <h3 class="similar-name">{{ item.name }}</h3>
+            <div class="similar-meta">
+              <span class="hot-badge">🔥 {{ formatViews(item.views) }} 热度</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 404状态 -->
@@ -102,6 +130,11 @@ const spot = computed(() => spotsStore.getSpotById(route.params.id))
 // 详情页使用原始图片，不传尺寸参数，保持最高清晰度
 const imageUrl = computed(() => spot.value ? getPlaceholderImage(spot.value.image) : '')
 
+const similarSpots = computed(() => {
+  if (!spot.value) return []
+  return spotsStore.getSimilarSpots(spot.value.id, 3)
+})
+
 const imageLoaded = ref(false)
 function onImageLoad() {
   imageLoaded.value = true
@@ -109,6 +142,19 @@ function onImageLoad() {
 
 function goBack() {
   router.push('/spots')
+}
+
+function goToSpotDetail(id) {
+  router.push(`/spot/${id}`)
+}
+
+function formatViews(views) {
+  if (views >= 10000) {
+    return (views / 10000).toFixed(1) + 'w'
+  } else if (views >= 1000) {
+    return (views / 1000).toFixed(1) + 'k'
+  }
+  return views.toString()
 }
 </script>
 
@@ -334,6 +380,99 @@ function goBack() {
   flex-shrink: 0;
 }
 
+/* ========== 相似推荐模块 ========== */
+.similar-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.similar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.similar-card {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color-light);
+  cursor: pointer;
+  transition: all var(--transition-slow);
+}
+
+.similar-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+  border-color: var(--border-color);
+}
+
+.similar-card:hover .similar-image {
+  transform: scale(1.05);
+}
+
+.similar-image-wrapper {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.similar-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--transition-slow);
+}
+
+.similar-category {
+  position: absolute;
+  top: var(--spacing-sm);
+  left: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: white;
+  background: linear-gradient(135deg, var(--primary) 0%, #0d9488 100%);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.similar-info {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.similar-name {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.similar-meta {
+  display: flex;
+  align-items: center;
+}
+
+.hot-badge {
+  font-size: var(--font-size-sm);
+  color: #ea580c;
+  font-weight: 500;
+}
+
 /* ========== 404 状态 ========== */
 .not-found {
   display: flex;
@@ -383,6 +522,19 @@ function goBack() {
 
   .quick-facts {
     padding: var(--spacing-md);
+  }
+
+  .similar-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .similar-image {
+    height: 180px;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
   }
 }
 </style>

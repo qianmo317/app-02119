@@ -288,6 +288,42 @@ export const useSpotsStore = defineStore('spots', () => {
     return spots.value.find(s => s.id === Number(id))
   }
 
+  function extractRegion(address) {
+    const match = address.match(/江门市([^市]+市|[^区]+区)/)
+    return match ? match[1] : ''
+  }
+
+  function getSimilarSpots(spotId, count = 3) {
+    const currentSpot = getSpotById(spotId)
+    if (!currentSpot) return []
+
+    const otherSpots = spots.value.filter(s => s.id !== Number(spotId))
+    const currentRegion = extractRegion(currentSpot.address)
+
+    const sameCategory = otherSpots.filter(s => s.category === currentSpot.category)
+    const sameCategorySameRegion = sameCategory.filter(s => extractRegion(s.address) === currentRegion)
+    const sameCategoryOtherRegion = sameCategory.filter(s => extractRegion(s.address) !== currentRegion)
+    const sameRegionOtherCategory = otherSpots.filter(s => s.category !== currentSpot.category && extractRegion(s.address) === currentRegion)
+    const others = otherSpots.filter(s =>
+      s.category !== currentSpot.category && extractRegion(s.address) !== currentRegion
+    )
+
+    const byViewsDesc = (a, b) => b.views - a.views
+    sameCategorySameRegion.sort(byViewsDesc)
+    sameCategoryOtherRegion.sort(byViewsDesc)
+    sameRegionOtherCategory.sort(byViewsDesc)
+    others.sort(byViewsDesc)
+
+    const result = [
+      ...sameCategorySameRegion,
+      ...sameCategoryOtherRegion,
+      ...sameRegionOtherCategory,
+      ...others
+    ]
+
+    return result.slice(0, count)
+  }
+
   function setCategory(category) {
     selectedCategory.value = category
   }
@@ -304,6 +340,7 @@ export const useSpotsStore = defineStore('spots', () => {
     filteredSpots,
     hotSpots,
     getSpotById,
+    getSimilarSpots,
     setCategory,
     setSearchKeyword
   }
