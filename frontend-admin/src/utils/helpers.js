@@ -81,6 +81,14 @@ export function formatRating(rating) {
   return rating.toFixed(1)
 }
 
+// 格式化浏览量（热度）
+export function formatViews(views) {
+  if (views >= 10000) {
+    return (views / 10000).toFixed(1) + '万'
+  }
+  return String(views)
+}
+
 // 防抖函数
 export function debounce(fn, delay = 300) {
   let timer = null
